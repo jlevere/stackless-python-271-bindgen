@@ -1,4 +1,5 @@
 // --- Core Stackless and Python Definitions ---
+#define Py_BUILD_CORE
 #define STACKLESS
 
 // Main header that pulls in most of the basics.
@@ -21,6 +22,9 @@
 #include "dictobject.h"     // PyDictObject, PyDictEntry
 #include "setobject.h"      // PySetObject, setentry
 #include "moduleobject.h"   // PyModuleObject
+#include "classobject.h"    // PyClassObject
+#include "bytearrayobject.h" // PyByteArrayObject
+#include "code.h"      // PyCodeObject
 
 
 // --- Method and Member Definitions ---
@@ -41,6 +45,9 @@
 
 // Defines _slp_tasklet (the C struct for PyTaskletObject) and PyStacklessState (_sts)
 #include "core/stackless_structs.h"
+
+// --- Stackless-Specific Definitions ---
+// Headers unique to Stackless Python that define its core objects.
 
 // Defines PyTaskletObject
 #include "module/flextype.h"

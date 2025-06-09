@@ -2,25 +2,15 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     utils.url = "github:numtide/flake-utils";
-    rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
   outputs = {
     nixpkgs,
     utils,
-    rust-overlay,
     ...
   }:
     utils.lib.eachDefaultSystem (system: let
-      name = "stackless-python-2.7.1-bindgen";
-
-      overlays = [
-        rust-overlay.overlays.default
-      ];
-
-      pkgs = import nixpkgs {
-        inherit system overlays;
-      };
+      pkgs = import nixpkgs {inherit system;};
 
       stacklessSrc = pkgs.fetchFromGitHub {
         owner = "stackless-dev";
@@ -47,33 +37,8 @@
         dontBuild = true;
       };
     in {
-      devShells.default = let
-        rust-sources = pkgs.rust-bin.stable.latest.rust-src;
-        rustToolchain = pkgs.rust-bin.stable.latest.default;
-      in
-        pkgs.mkShell {
-          name = "${name}-devshell";
-
-          packages = [
-            rustToolchain
-            rust-sources
-            pkgs.clippy
-            pkgs.rustfmt
-            pkgs.rust-analyzer
-            pkgs.alejandra
-            pkgs.vhs
-            pkgs.clang
-            pkgs.llvmPackages.libclang
-            pkgs.rust-bindgen
-            pythonHeaders
-          ];
-
-          shellHook = ''
-            export PYTHON_HEADER_PATH=${pythonHeaders}/include/python2.7
-            export BINDGEN_EXTRA_CLANG_ARGS="-I$PYTHON_HEADER_PATH"
-            export LIBCLANG_PATH="${pkgs.libclang.lib}/lib"
-            export RUST_SRC_PATH=${rust-sources}
-          '';
-        };
+      packages = {
+        pythonHeaders = pythonHeaders;
+      };
     });
 }

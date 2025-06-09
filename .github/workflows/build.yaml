@@ -1,0 +1,74 @@
+name: Generate and upload bindgen output
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-python-headers:
+    name: Build Stackless Python Headers
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Nix
+        uses: cachix/install-nix-action@v26
+
+      - name: Setup Attic cache
+        uses: ryanccn/attic-action@v0
+        with:
+          endpoint: ${{ secrets.ATTIC_ENDPOINT }}
+          cache: ${{ secrets.ATTIC_CACHE }}
+          token: ${{ secrets.ATTIC_TOKEN }}
+
+      - name: Build pythonHeaders
+        run: nix build .#pythonHeaders --print-out-paths --out-link result-python-headers
+
+      - name: Upload pythonHeaders artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: pythonHeaders
+          path: result-python-headers
+
+  generate-bindings:
+    name: Generate Bindgen Output
+    runs-on: windows-latest
+    needs: build-python-headers
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+    - name: Download pythonHeaders artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: pythonHeaders
+        path: pythonHeaders
+
+    - name: Set up Python header env vars
+      run: |
+        echo "PYTHON_HEADER_PATH=${{ github.workspace }}\pythonHeaders\include\python2.7" >> $env:GITHUB_ENV
+        echo "BINDGEN_OUTPUT_PATH=${{ github.workspace }}\bindings\bindings.rs" >> $env:GITHUB_ENV
+
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-gnu
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Run cargo build to trigger bindgen
+        run: |
+          mkdir -p bindings
+          cargo build
+
+      - name: Upload Bindgen Output
+        uses: actions/upload-artifact@v4
+        with:
+          name: bindgen-output
+          path: bindings/bindings.rs
