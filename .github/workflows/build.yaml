@@ -77,8 +77,9 @@ jobs:
       - name: Get version from Cargo.toml
         id: get_version
         run: |
-          VERSION="v$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          $metadata = cargo metadata --no-deps --format-version 1 | ConvertFrom-Json
+          $VERSION = "v$($metadata.packages[0].version)"
+          echo "version=$VERSION" >> $env:GITHUB_OUTPUT
 
       - name: Check if tag exists and create if new
         uses: mathieudutour/github-tag-action@v6.2
