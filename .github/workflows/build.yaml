@@ -3,6 +3,12 @@ name: Generate and upload bindgen output
 on:
   push:
     branches: [main]
+    paths:
+      - "**/*.rs"
+      - "**/*.nix"
+      - "**/*.h"
+      - "Cargo.toml"
+      - "Cargo.lock"
   workflow_dispatch:
 
 jobs:
@@ -37,6 +43,8 @@ jobs:
     name: Generate Bindgen Output
     runs-on: windows-latest
     needs: build-python-headers
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repo
@@ -66,8 +74,26 @@ jobs:
           mkdir -p bindings
           cargo build
 
-      - name: Upload Bindgen Output
-        uses: actions/upload-artifact@v4
+      - name: Get version from Cargo.toml
+        id: get_version
+        run: |
+          VERSION="v$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Check if tag exists and create if new
+        uses: mathieudutour/github-tag-action@v6.2
+        id: tag_version
         with:
-          name: bindgen-output
-          path: bindings/bindings.rs
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          custom_tag: ${{ steps.get_version.outputs.version }}
+          tag_prefix: ""
+
+      - name: Create GitHub Release
+        if: steps.tag_version.outputs.new_tag
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          generate_release_notes: true
+          files: |
+            bindings/bindings.rs
