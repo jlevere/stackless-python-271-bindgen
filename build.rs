@@ -74,13 +74,16 @@ fn main() {
         "_slp_cstack",
         "_PyErr_StackItem",
         "PyTaskletFlagStruc",
+        "Py_complex",
+        "PyComplexObject",
     ];
 
-    for t in &types {
-        builder = builder.allowlist_type(t);
-    }
+    // for t in &types {
+    //     builder = builder.allowlist_type(t);
+    // }
 
-    builder = builder.allowlist_function("Py.*");
+    //builder = builder.allowlist_function("Py.*");
+    builder = builder.blocklist_function(".*");
 
     let bindings = builder.generate().expect("Unable to generate bindings");
 
